@@ -4,8 +4,8 @@ import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { getRedirectTarget } from '../auth/RequireAuth'
 import { AuthCard } from '../components/AuthCard'
+import { AuthField } from '../components/AuthField'
 import { FullScreenLoader } from '../components/StateViews'
-import { Field } from './LoginPage'
 
 type FieldName = 'teamName' | 'email' | 'password'
 type FieldErrors = Partial<Record<FieldName, string>>
@@ -64,9 +64,9 @@ export function RegisterPage() {
   return (
     <AuthCard title="Registrar tripulación">
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <Field label="Nombre de la tripulación" type="text" value={teamName} onChange={setTeamName} error={fieldErrors.teamName} />
-        <Field label="Email" type="email" value={email} onChange={setEmail} error={fieldErrors.email} autoComplete="email" />
-        <Field label="Contraseña (mín. 8)" type="password" value={password} onChange={setPassword} error={fieldErrors.password} autoComplete="new-password" />
+        <AuthField label="Nombre de la tripulación" type="text" value={teamName} onChange={setTeamName} error={fieldErrors.teamName} />
+        <AuthField label="Email" type="email" value={email} onChange={setEmail} error={fieldErrors.email} autoComplete="email" />
+        <AuthField label="Contraseña (mín. 8)" type="password" value={password} onChange={setPassword} error={fieldErrors.password} autoComplete="new-password" />
         {generalError && <p className="text-sm text-red-400" role="alert">{generalError}</p>}
         <button disabled={submitting} className="w-full rounded bg-amber-500 py-2 font-semibold text-slate-950 disabled:opacity-50">
           {submitting ? 'Registrando…' : 'Registrar y zarpar'}
