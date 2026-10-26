@@ -3,8 +3,9 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { getRedirectTarget } from '../auth/RequireAuth'
+import { AuthCard } from '../components/AuthCard'
 import { FullScreenLoader } from '../components/StateViews'
-import { AuthCard, Field } from './LoginPage'
+import { Field } from './LoginPage'
 
 type FieldName = 'teamName' | 'email' | 'password'
 type FieldErrors = Partial<Record<FieldName, string>>
