@@ -156,6 +156,17 @@ export function WantedListPage() {
           onChange={(v) => updateFilters({ size: Number(v) as WantedFilters['size'] })}
           options={[['10', '10'], ['20', '20'], ['50', '50']]}
         />
+        <button
+          type="button"
+          onClick={() => {
+            setSearchText('')
+            setSearchParams(new URLSearchParams(), { replace: true })
+          }}
+          disabled={canonical.length === 0}
+          className="rounded border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 lg:col-span-3"
+        >
+          Limpiar filtros
+        </button>
       </div>
 
       {/* Altura mínima fija + overlay de carga: el layout no "salta" mientras carga. */}
