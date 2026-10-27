@@ -14,6 +14,7 @@ export function Layout() {
           <nav className="flex gap-1 text-sm">
             <NavLink to="/" end className={linkClass}>Dashboard</NavLink>
             <NavLink to="/wanted" className={linkClass}>Se Busca</NavLink>
+            <NavLink to="/news" className={linkClass}>Noticias</NavLink>
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
             {team && <span className="text-slate-400">{team.name} · {team.code}</span>}
