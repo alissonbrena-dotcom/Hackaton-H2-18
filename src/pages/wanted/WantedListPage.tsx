@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { ApiError, apiFetch, isAbortError } from '../../api/client'
 import type { Crew, FruitFilter, WantedPage, WantedSort, WantedStatus } from '../../api/types'
@@ -106,6 +106,13 @@ export function WantedListPage() {
   const rememberScroll = () => scrollCache.set(apiQuery, window.scrollY)
 
   const crews = useApiQuery('crews', (signal) => apiFetch<Crew[]>('/crews', { signal }))
+  const crewOptions: [string, string][] = (crews.data ?? []).map((c) => [c.id, c.name])
+  // Si la URL trae un crewId que aún no está en la lista (cargando, error o id inexistente),
+  // lo mostramos igual: el select nunca debe decir "Todas" con un filtro activo.
+  if (filters.crewId && !crewOptions.some(([id]) => id === filters.crewId)) {
+    const label = crews.loading ? 'Cargando tripulaciones…' : crews.error ? 'Tripulación seleccionada' : 'Tripulación desconocida'
+    crewOptions.unshift([filters.crewId, label])
+  }
 
   // Regla del Log Pose: solo mostramos datos de la query actual. Mientras carga la nueva
   // no se ve nada de la anterior (ni cards ni totales de paginación).
@@ -136,7 +143,13 @@ export function WantedListPage() {
           label="Tripulación"
           value={filters.crewId ?? ''}
           onChange={(v) => updateFilters({ crewId: v || null })}
-          options={[['', 'Todas'], ...(crews.data ?? []).map((c): [string, string] => [c.id, c.name])]}
+          options={[['', 'Todas'], ...crewOptions]}
+          hint={crews.error && (
+            <span className="text-red-400">
+              No se pudieron cargar las tripulaciones.{' '}
+              <button type="button" onClick={crews.retry} className="underline">Reintentar</button>
+            </span>
+          )}
         />
         <Select
           label="Fruta del diablo"
@@ -225,23 +238,27 @@ export function WantedListPage() {
   )
 }
 
-function Select({ label, value, onChange, options }: {
+function Select({ label, value, onChange, options, hint }: {
   label: string
   value: string
   onChange: (v: string) => void
   options: [string, string][]
+  hint?: ReactNode
 }) {
   return (
-    <label className="block">
-      <span className="text-xs uppercase text-slate-400">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
-      >
-        {options.map(([v, text]) => <option key={v} value={v}>{text}</option>)}
-      </select>
-    </label>
+    <div>
+      <label className="block">
+        <span className="text-xs uppercase text-slate-400">{label}</span>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
+        >
+          {options.map(([v, text]) => <option key={v} value={v}>{text}</option>)}
+        </select>
+      </label>
+      {hint && <p className="mt-1 text-xs">{hint}</p>}
+    </div>
   )
 }
 
