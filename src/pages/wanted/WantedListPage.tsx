@@ -5,7 +5,7 @@ import type { Crew, FruitFilter, WantedPage, WantedSort, WantedStatus } from '..
 import { EmptyBox, ErrorBox, Spinner } from '../../components/StateViews'
 import { useApiQuery } from '../../hooks/useApiQuery'
 import { FRUIT_LABEL, formatBerries, SORT_LABEL, STATUS_LABEL } from '../../utils/format'
-import { parseFilters, toApiQuery, toSearchParams, type WantedFilters } from './wantedParams'
+import { MAX_Q_LENGTH, parseFilters, toApiQuery, toSearchParams, type WantedFilters } from './wantedParams'
 
 // Caché en memoria de páginas ya vistas (clave = query). Al volver del detalle
 // el listado se pinta al instante y en la misma posición de scroll.
@@ -129,6 +129,7 @@ export function WantedListPage() {
             type="search"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
+            maxLength={MAX_Q_LENGTH}
             placeholder="Ej: Luffy, Pirate Hunter…"
             className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
           />
