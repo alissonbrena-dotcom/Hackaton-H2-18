@@ -8,6 +8,7 @@ import { NewsDetailPage } from './pages/news/NewsDetailPage'
 import { NewsFeedPage } from './pages/news/NewsFeedPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { SagaStoryPage } from './pages/sagas/SagaStoryPage'
 import { SagasPage } from './pages/sagas/SagasPage'
 import { WantedDetailPage } from './pages/wanted/WantedDetailPage'
 import { WantedListPage } from './pages/wanted/WantedListPage'
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="news" element={<NewsFeedPage />} />
               <Route path="news/:id" element={<NewsDetailPage />} />
               <Route path="sagas" element={<SagasPage />} />
+              <Route path="sagas/:id" element={<SagaStoryPage />} />
             </Route>
           </Route>
 
