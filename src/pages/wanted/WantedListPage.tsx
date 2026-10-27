@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { ApiError, apiFetch, isAbortError } from '../../api/client'
 import type { Crew, FruitFilter, WantedPage, WantedSort, WantedStatus } from '../../api/types'
+import { Pagination } from '../../components/Pagination'
+import { Select } from '../../components/Select'
 import { EmptyBox, ErrorBox, Spinner } from '../../components/StateViews'
 import { useApiQuery } from '../../hooks/useApiQuery'
-import { FRUIT_LABEL, formatBerries, SORT_LABEL, STATUS_LABEL } from '../../utils/format'
+import { FRUIT_LABEL, SORT_LABEL, STATUS_LABEL } from '../../utils/format'
+import { WantedCard } from './WantedCard'
 import { MAX_Q_LENGTH, parseFilters, toApiQuery, toSearchParams, type WantedFilters } from './wantedParams'
 
 // Caché en memoria de páginas ya vistas (clave = query). Al volver del detalle
@@ -201,24 +204,7 @@ export function WantedListPage() {
           <ul className="grid gap-3 sm:grid-cols-2">
             {(current ? current.content : []).map((w) => (
               <li key={w.id}>
-                <Link
-                  to={`/wanted/${w.id}`}
-                  state={{ fromList: true }}
-                  onClick={rememberScroll}
-                  className="block h-full rounded-lg border border-slate-800 bg-slate-900 p-4 hover:border-amber-500"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-semibold">{w.name}</div>
-                      <div className="text-sm text-slate-400">“{w.epithet}” · {w.crew.name}</div>
-                    </div>
-                    <span className="shrink-0 rounded bg-slate-800 px-2 py-0.5 text-xs">{STATUS_LABEL[w.status]}</span>
-                  </div>
-                  <div className="mt-2 flex justify-between text-sm">
-                    <span className="text-amber-400">{formatBerries(w.bounty)}</span>
-                    <span className="text-slate-400">{w.devilFruit ? `${w.devilFruit.name} (${FRUIT_LABEL[w.devilFruit.type]})` : 'Sin fruta'}</span>
-                  </div>
-                </Link>
+                <WantedCard wanted={w} onOpen={rememberScroll} />
               </li>
             ))}
           </ul>
@@ -236,50 +222,6 @@ export function WantedListPage() {
             onChange={(page) => updateFilters({ page })}
           />
         )}
-      </div>
-    </div>
-  )
-}
-
-function Select({ label, value, onChange, options, hint }: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  options: [string, string][]
-  hint?: ReactNode
-}) {
-  return (
-    <div>
-      <label className="block">
-        <span className="text-xs uppercase text-slate-400">{label}</span>
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
-        >
-          {options.map(([v, text]) => <option key={v} value={v}>{text}</option>)}
-        </select>
-      </label>
-      {hint && <p className="mt-1 text-xs">{hint}</p>}
-    </div>
-  )
-}
-
-function Pagination({ page, totalPages, totalElements, disabled, onChange }: {
-  page: number
-  totalPages: number
-  totalElements: number
-  disabled: boolean
-  onChange: (page: number) => void
-}) {
-  const btn = 'rounded border border-slate-700 px-3 py-1.5 disabled:opacity-40 hover:enabled:bg-slate-800'
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-slate-400">{totalElements} carteles</span>
-      <div className="flex items-center gap-2">
-        <button className={btn} disabled={disabled || page <= 0} onClick={() => onChange(page - 1)}>← Anterior</button>
-        <span>Página {totalPages === 0 ? 0 : page + 1} de {totalPages}</span>
-        <button className={btn} disabled={disabled || page >= totalPages - 1} onClick={() => onChange(page + 1)}>Siguiente →</button>
       </div>
     </div>
   )
