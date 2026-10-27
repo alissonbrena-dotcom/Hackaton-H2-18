@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from './types'
+import type { ApiErrorBody, NewsDetail } from './types'
 
 // La URL base viene de .env (VITE_API_BASE_URL), nunca escrita en el código.
 const BASE_URL: string = import.meta.env.VITE_API_BASE_URL
@@ -16,12 +16,14 @@ export class ApiError extends Error {
   status: number
   code: string
   details: { field: string; message: string }[]
+  current: NewsDetail | null
 
   constructor(body: ApiErrorBody) {
     super(body.message)
     this.status = body.status
     this.code = body.code
     this.details = body.details ?? []
+    this.current = body.current ?? null
   }
 }
 

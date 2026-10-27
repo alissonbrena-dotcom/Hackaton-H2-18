@@ -101,10 +101,43 @@ export interface LogPose {
   message: string
 }
 
+export type NewsType = 'BOUNTY_UPDATE' | 'BATTLE' | 'MARINE_OPERATION' | 'WORLD_GOVERNMENT' | 'DISCOVERY'
+export type NewsPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+export type NewsStatus = 'RUMOR' | 'CONFIRMED' | 'DEBUNKED'
+// Un rumor solo se puede verificar como CONFIRMED o DEBUNKED.
+export type NewsVerification = Exclude<NewsStatus, 'RUMOR'>
+
+export interface NewsItem {
+  id: string
+  type: NewsType
+  priority: NewsPriority
+  status: NewsStatus
+  title: string
+  summary: string
+  source: string
+  island: string
+  relatedWanted: { id: string; name: string } | null
+  publishedAt: string
+  updatedAt: string
+  verifiedAt: string | null
+}
+
+export interface NewsDetail extends NewsItem {
+  body: string[]
+}
+
+export interface NewsFeed {
+  items: NewsItem[]
+  nextCursor: string | null
+  hasMore: boolean
+}
+
 export interface ApiErrorBody {
   status: number
   code: string
   message: string
   traceId?: string
   details?: { field: string; message: string }[]
+  // Solo en 409 NEWS_ALREADY_VERIFIED: la noticia tal como quedó.
+  current?: NewsDetail
 }
