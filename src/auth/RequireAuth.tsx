@@ -2,7 +2,8 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { ErrorBox, FullScreenLoader } from '../components/StateViews'
 import { useAuth } from './AuthContext'
 
-// Guardián de rutas privadas.
+// Guardián de rutas privadas: envuelve todas las páginas que requieren sesión
+// y decide qué mostrar según el estado de la sesión (ver AuthContext).
 export function RequireAuth() {
   const { status, retrySession, logout } = useAuth()
   const location = useLocation()
@@ -21,7 +22,8 @@ export function RequireAuth() {
   }
 
   if (status === 'anonymous') {
-    // Guardamos a dónde quería ir (ruta + query) para volver ahí después del login.
+    // Guardamos a dónde quería ir (ruta + query) en el `state` de la navegación.
+    // Después del login, LoginPage lee ese `from` y lo manda exactamente ahí.
     const from = location.pathname + location.search + location.hash
     return <Navigate to="/login" replace state={{ from }} />
   }

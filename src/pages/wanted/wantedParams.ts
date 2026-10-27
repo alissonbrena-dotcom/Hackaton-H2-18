@@ -1,6 +1,8 @@
 import type { FruitFilter, WantedSort, WantedStatus } from '../../api/types'
 
-// La URL es la ÚNICA fuente de verdad del listado: /wanted?page=2&size=20&status=AT_LARGE...
+// La URL es la ÚNICA fuente de verdad del listado: /wanted?page=2&size=50&status=AT_LARGE...
+// No guardamos los filtros en useState: los leemos de la URL en cada render.
+// Por eso recargar, compartir el link o usar atrás/adelante muestran exactamente lo mismo.
 
 export interface WantedFilters {
   page: number
@@ -31,6 +33,7 @@ export const DEFAULT_FILTERS: WantedFilters = {
 export const MAX_Q_LENGTH = 100
 const MAX_CREW_ID_LENGTH = 200
 
+// Devuelve el valor solo si está en la lista de permitidos; si no (ej. status=PIZZA), null.
 function pick<T extends string>(value: string | null, allowed: readonly T[]): T | null {
   return allowed.find((a) => a === value) ?? null
 }

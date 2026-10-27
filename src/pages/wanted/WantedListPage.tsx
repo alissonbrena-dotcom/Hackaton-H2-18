@@ -22,7 +22,8 @@ export function WantedListPage() {
   const filters = parseFilters(searchParams)
   const apiQuery = toApiQuery(filters)
 
-  // Actualiza la URL. Si cambia un filtro/orden/tamaño/búsqueda, vuelve a la página 0.
+  // Actualiza la URL. Si cambia un filtro/orden/tamaño/búsqueda, vuelve a la página 0:
+  // así nunca quedamos en una página que ya no existe con los filtros nuevos.
   const updateFilters = useCallback(
     (patch: Partial<WantedFilters>, options: { replace?: boolean } = {}) => {
       setSearchParams(
@@ -44,7 +45,9 @@ export function WantedListPage() {
     if (canonical !== searchParams.toString()) setSearchParams(new URLSearchParams(canonical), { replace: true })
   }, [canonical, searchParams, setSearchParams])
 
-  // 2) Búsqueda con debounce: el input es estado local; la URL se actualiza 400 ms después de dejar de escribir.
+  // 2) Búsqueda con debounce (para no hacer una request por cada tecla):
+  // lo que se escribe vive en `searchText` (estado local). Cada tecla reinicia un timer de 400 ms;
+  // solo cuando dejas de escribir 400 ms, el texto pasa a la URL y recién ahí se pide al backend.
   const [searchText, setSearchText] = useState(filters.q)
   useEffect(() => {
     // Si la URL cambia (atrás/adelante), el input se sincroniza. Si ya coincide sin los
@@ -58,6 +61,9 @@ export function WantedListPage() {
   }, [searchText, filters.q, updateFilters])
 
   // 3) Datos del servidor, protegidos contra respuestas antiguas.
+  // Cada request lleva un AbortController. Si la query cambia antes de que llegue la respuesta,
+  // React ejecuta el cleanup del efecto (return de abajo), que cancela la request vieja.
+  // Así una respuesta que llega tarde nunca reemplaza a la de la búsqueda más reciente.
   const [data, setData] = useState<WantedPage | null>(() => pageCache.get(apiQuery) ?? null)
   const [dataKey, setDataKey] = useState(apiQuery) // a qué query pertenecen los datos en pantalla
   const [loading, setLoading] = useState(!pageCache.has(apiQuery))

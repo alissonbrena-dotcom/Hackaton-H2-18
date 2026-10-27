@@ -2,8 +2,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { ApiError, apiFetch, isAbortError, setUnauthorizedHandler, tokenStorage } from '../api/client'
 import type { LoginResponse, MeResponse, Team, User } from '../api/types'
 
-// 'checking' = hay un token guardado y todavía estamos preguntando a /auth/me si sigue siendo válido.
-// 'error'    = no pudimos confirmarlo (red caída, 5xx): el token NO se descarta, se puede reintentar.
+// Estados posibles de la sesión:
+// 'checking'      = hay un token guardado y estamos preguntando a /auth/me si sigue siendo válido.
+// 'authenticated' = sesión confirmada: se pueden ver las rutas privadas.
+// 'anonymous'     = no hay sesión: las rutas privadas mandan al login.
+// 'error'         = no pudimos confirmarlo (red caída, 5xx): el token NO se descarta, se puede reintentar.
 type AuthStatus = 'checking' | 'authenticated' | 'anonymous' | 'error'
 
 interface AuthContextValue {
@@ -31,12 +34,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('anonymous')
   }, [])
 
-  // Cualquier 401 en cualquier parte de la app cierra la sesión -> RequireAuth manda al login.
+  // Sesión que deja de ser válida: si CUALQUIER request recibe 401 (token vencido o inválido),
+  // apiFetch llama a logout. El estado pasa a 'anonymous' y RequireAuth manda al login.
   useEffect(() => {
     setUnauthorizedHandler(logout)
   }, [logout])
 
-  // Restauración de sesión al recargar: validamos el token guardado con /auth/me.
+  // Restauración de sesión al recargar: el token está en localStorage, pero no sabemos si sigue
+  // siendo válido. Se lo preguntamos a /auth/me. Mientras responde, el estado es 'checking'
+  // y se muestra "Verificando sesión…" en vez del login (así no hay parpadeo).
   useEffect(() => {
     if (!tokenStorage.get()) return
     const controller = new AbortController()
@@ -59,6 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRestoreAttempt((a) => a + 1)
   }, [])
 
+  // Login y registro responden lo mismo (token + usuario + equipo): guardamos el token y entramos.
+  // Por eso el registro entra directo a la app con la sesión iniciada.
   const startSession = useCallback((res: LoginResponse) => {
     tokenStorage.set(res.token)
     setUser(res.user)
