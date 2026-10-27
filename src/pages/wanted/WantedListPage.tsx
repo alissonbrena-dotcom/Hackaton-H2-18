@@ -160,7 +160,7 @@ export function WantedListPage() {
           type="button"
           onClick={() => {
             setSearchText('')
-            setSearchParams(new URLSearchParams(), { replace: true })
+            setSearchParams(new URLSearchParams())
           }}
           disabled={canonical.length === 0}
           className="rounded border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 lg:col-span-3"
