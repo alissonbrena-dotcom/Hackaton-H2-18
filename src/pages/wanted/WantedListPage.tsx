@@ -107,9 +107,9 @@ export function WantedListPage() {
 
   const crews = useApiQuery('crews', (signal) => apiFetch<Crew[]>('/crews', { signal }))
 
-  // Regla del Log Pose: solo mostramos datos de la query actual. Mientras carga la nueva,
-  // los anteriores quedan atenuados bajo el overlay (no se presentan como resultado final).
-  const showData = data !== null && (dataKey === apiQuery || loading)
+  // Regla del Log Pose: solo mostramos datos de la query actual. Mientras carga la nueva
+  // no se ve nada de la anterior (ni cards ni totales de paginación).
+  const current = dataKey === apiQuery ? data : (pageCache.get(apiQuery) ?? null)
 
   return (
     <div className="space-y-4">
@@ -179,11 +179,11 @@ export function WantedListPage() {
 
         {error ? (
           <ErrorBox message={error} onRetry={() => setAttempt((a) => a + 1)} />
-        ) : showData && data.content.length === 0 ? (
+        ) : current && current.content.length === 0 ? (
           <EmptyBox>No hay carteles que coincidan con estos filtros.</EmptyBox>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
-            {(showData ? data.content : []).map((w) => (
+            {(current ? current.content : []).map((w) => (
               <li key={w.id}>
                 <Link
                   to={`/wanted/${w.id}`}
@@ -209,15 +209,18 @@ export function WantedListPage() {
         )}
       </div>
 
-      {data && !error && (
-        <Pagination
-          page={filters.page}
-          totalPages={data.totalPages}
-          totalElements={data.totalElements}
-          disabled={loading}
-          onChange={(page) => updateFilters({ page })}
-        />
-      )}
+      {/* Altura reservada: la paginación aparece y desaparece sin mover el layout. */}
+      <div className="min-h-9">
+        {current && !error && (
+          <Pagination
+            page={filters.page}
+            totalPages={current.totalPages}
+            totalElements={current.totalElements}
+            disabled={loading}
+            onChange={(page) => updateFilters({ page })}
+          />
+        )}
+      </div>
     </div>
   )
 }
