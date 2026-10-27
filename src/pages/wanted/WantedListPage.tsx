@@ -44,7 +44,9 @@ export function WantedListPage() {
   // 2) Búsqueda con debounce: el input es estado local; la URL se actualiza 400 ms después de dejar de escribir.
   const [searchText, setSearchText] = useState(filters.q)
   useEffect(() => {
-    setSearchText(filters.q) // si la URL cambia (atrás/adelante), el input se sincroniza
+    // Si la URL cambia (atrás/adelante), el input se sincroniza. Si ya coincide sin los
+    // espacios de los extremos, se deja tal cual para no borrar el espacio que se está escribiendo.
+    setSearchText((prev) => (prev.trim() === filters.q ? prev : filters.q))
   }, [filters.q])
   useEffect(() => {
     if (searchText.trim() === filters.q) return
