@@ -4,6 +4,7 @@ import { RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { NewsDetailPage } from './pages/news/NewsDetailPage'
 import { NewsFeedPage } from './pages/news/NewsFeedPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="wanted" element={<WantedListPage />} />
               <Route path="wanted/:id" element={<WantedDetailPage />} />
               <Route path="news" element={<NewsFeedPage />} />
+              <Route path="news/:id" element={<NewsDetailPage />} />
             </Route>
           </Route>
 
