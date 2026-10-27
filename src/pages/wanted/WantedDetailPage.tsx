@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { ApiError, apiFetch } from '../../api/client'
 import type { WantedDetail } from '../../api/types'
@@ -9,6 +10,12 @@ export function WantedDetailPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // El listado puede haber quedado scrolleado: el detalle siempre se abre desde arriba.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [id])
+
   const { data, error, loading, retry } = useApiQuery(`wanted/${id}`, (signal) =>
     apiFetch<WantedDetail>(`/wanted/${encodeURIComponent(id)}`, { signal }).catch((err: unknown) => {
       if (err instanceof ApiError && err.status === 404) throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Este cartel no existe.' })
