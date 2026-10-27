@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { apiFetch, setUnauthorizedHandler, tokenStorage } from '../api/client'
+import { ApiError, apiFetch, isAbortError, setUnauthorizedHandler, tokenStorage } from '../api/client'
 import type { LoginResponse, MeResponse, Team, User } from '../api/types'
 
 // 'checking' = hay un token guardado y todavía estamos preguntando a /auth/me si sigue siendo válido.
-type AuthStatus = 'checking' | 'authenticated' | 'anonymous'
+// 'error'    = no pudimos confirmarlo (red caída, 5xx): el token NO se descarta, se puede reintentar.
+type AuthStatus = 'checking' | 'authenticated' | 'anonymous' | 'error'
 
 interface AuthContextValue {
   status: AuthStatus
@@ -12,6 +13,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>
   register: (teamName: string, email: string, password: string) => Promise<void>
   logout: () => void
+  retrySession: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -20,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>(() => (tokenStorage.get() ? 'checking' : 'anonymous'))
   const [user, setUser] = useState<User | null>(null)
   const [team, setTeam] = useState<Team | null>(null)
+  const [restoreAttempt, setRestoreAttempt] = useState(0)
 
   const logout = useCallback(() => {
     tokenStorage.clear()
@@ -44,12 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus('authenticated')
       })
       .catch((err: unknown) => {
-        if (controller.signal.aborted) return
-        // 401 ya llamó a logout; ante otros errores tampoco podemos confirmar la sesión.
-        if (!(err instanceof DOMException)) logout()
+        if (controller.signal.aborted || isAbortError(err)) return
+        // 401 ya llamó a logout. Otro error no dice que la sesión sea inválida: dejamos reintentar.
+        if (!(err instanceof ApiError && err.status === 401)) setStatus('error')
       })
     return () => controller.abort()
-  }, [logout])
+  }, [restoreAttempt])
+
+  const retrySession = useCallback(() => {
+    setStatus('checking')
+    setRestoreAttempt((a) => a + 1)
+  }, [])
 
   const startSession = useCallback((res: LoginResponse) => {
     tokenStorage.set(res.token)
@@ -83,8 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo(
-    () => ({ status, user, team, login, register, logout }),
-    [status, user, team, login, register, logout],
+    () => ({ status, user, team, login, register, logout, retrySession }),
+    [status, user, team, login, register, logout, retrySession],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

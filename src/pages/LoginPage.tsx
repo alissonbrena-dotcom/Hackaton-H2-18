@@ -1,8 +1,10 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { getRedirectTarget } from '../auth/RequireAuth'
+import { AuthCard } from '../components/AuthCard'
+import { AuthField } from '../components/AuthField'
 import { FullScreenLoader } from '../components/StateViews'
 
 export function LoginPage() {
@@ -35,8 +37,8 @@ export function LoginPage() {
   return (
     <AuthCard title="Iniciar sesión">
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
-        <Field label="Contraseña" type="password" value={password} onChange={setPassword} autoComplete="current-password" />
+        <AuthField label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
+        <AuthField label="Contraseña" type="password" value={password} onChange={setPassword} autoComplete="current-password" />
         {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
         <button disabled={submitting} className="w-full rounded bg-amber-500 py-2 font-semibold text-slate-950 disabled:opacity-50">
           {submitting ? 'Entrando…' : 'Entrar'}
@@ -47,43 +49,5 @@ export function LoginPage() {
         <Link to="/register" state={location.state} className="text-amber-400 underline">Regístrala</Link>
       </p>
     </AuthCard>
-  )
-}
-
-export function AuthCard({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-800 bg-slate-900 p-6">
-        <h1 className="mb-1 text-center text-2xl font-bold text-amber-400">⚓ Log Pose Console</h1>
-        <h2 className="mb-6 text-center text-slate-300">{title}</h2>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-interface FieldProps {
-  label: string
-  type: string
-  value: string
-  onChange: (v: string) => void
-  error?: string
-  autoComplete?: string
-}
-
-export function Field({ label, type, value, onChange, error, autoComplete }: FieldProps) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm text-slate-300">{label}</span>
-      <input
-        type={type}
-        value={value}
-        autoComplete={autoComplete}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={error ? true : undefined}
-        className={`w-full rounded border bg-slate-950 px-3 py-2 outline-none focus:border-amber-400 ${error ? 'border-red-500' : 'border-slate-700'}`}
-      />
-      {error && <span className="mt-1 block text-sm text-red-400">{error}</span>}
-    </label>
   )
 }

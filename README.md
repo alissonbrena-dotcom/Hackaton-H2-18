@@ -6,8 +6,8 @@ Consola en React + TypeScript para la Guild de Cazarrecompensas (Hackathon Front
 
 | Nombre | Código |
 |:-------|:-------|
-| COMPLETAR | COMPLETAR |
-| Ariana COMPLETAR | COMPLETAR |
+| Alisson Luciana Breña Davila | 202410064 |
+| Ariana Alejandra Isla Urbina | 202510309 |
 
 ## Cómo ejecutar
 

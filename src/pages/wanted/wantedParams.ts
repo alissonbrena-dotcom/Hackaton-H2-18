@@ -27,22 +27,27 @@ export const DEFAULT_FILTERS: WantedFilters = {
   sort: 'bounty,desc',
 }
 
+// Límites del contrato (Swagger): pasarse de ellos hace que el backend responda 400.
+export const MAX_Q_LENGTH = 100
+const MAX_CREW_ID_LENGTH = 200
+
 function pick<T extends string>(value: string | null, allowed: readonly T[]): T | null {
   return allowed.find((a) => a === value) ?? null
 }
 
-// Valores inválidos en la URL (page=-3, size=7, status=PIZZA) se reemplazan por el default: la vista no se rompe.
+// Valores inválidos en la URL (page=-3, size=7, status=PIZZA, q demasiado largo) se reemplazan
+// por el default o se recortan: la vista no se rompe.
 export function parseFilters(params: URLSearchParams): WantedFilters {
   const rawPage = Number(params.get('page'))
   const rawSize = Number(params.get('size'))
   const crewId = params.get('crewId')?.trim()
   return {
-    page: Number.isInteger(rawPage) && rawPage >= 0 ? rawPage : DEFAULT_FILTERS.page,
+    page: Number.isSafeInteger(rawPage) && rawPage >= 0 ? rawPage : DEFAULT_FILTERS.page,
     size: SIZES.find((s) => s === rawSize) ?? DEFAULT_FILTERS.size,
     status: pick(params.get('status'), STATUSES),
-    crewId: crewId ? crewId : null,
+    crewId: crewId && crewId.length <= MAX_CREW_ID_LENGTH ? crewId : null,
     fruit: pick(params.get('fruit'), FRUITS),
-    q: params.get('q')?.trim() ?? '',
+    q: params.get('q')?.trim().slice(0, MAX_Q_LENGTH).trim() ?? '',
     sort: pick(params.get('sort'), SORTS) ?? DEFAULT_FILTERS.sort,
   }
 }

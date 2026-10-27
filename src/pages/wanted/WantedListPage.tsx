@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { ApiError, apiFetch, isAbortError } from '../../api/client'
 import type { Crew, FruitFilter, WantedPage, WantedSort, WantedStatus } from '../../api/types'
 import { EmptyBox, ErrorBox, Spinner } from '../../components/StateViews'
 import { useApiQuery } from '../../hooks/useApiQuery'
 import { FRUIT_LABEL, formatBerries, SORT_LABEL, STATUS_LABEL } from '../../utils/format'
-import { parseFilters, toApiQuery, toSearchParams, type WantedFilters } from './wantedParams'
+import { MAX_Q_LENGTH, parseFilters, toApiQuery, toSearchParams, type WantedFilters } from './wantedParams'
 
 // Caché en memoria de páginas ya vistas (clave = query). Al volver del detalle
 // el listado se pinta al instante y en la misma posición de scroll.
@@ -44,7 +44,9 @@ export function WantedListPage() {
   // 2) Búsqueda con debounce: el input es estado local; la URL se actualiza 400 ms después de dejar de escribir.
   const [searchText, setSearchText] = useState(filters.q)
   useEffect(() => {
-    setSearchText(filters.q) // si la URL cambia (atrás/adelante), el input se sincroniza
+    // Si la URL cambia (atrás/adelante), el input se sincroniza. Si ya coincide sin los
+    // espacios de los extremos, se deja tal cual para no borrar el espacio que se está escribiendo.
+    setSearchText((prev) => (prev.trim() === filters.q ? prev : filters.q))
   }, [filters.q])
   useEffect(() => {
     if (searchText.trim() === filters.q) return
@@ -106,10 +108,17 @@ export function WantedListPage() {
   const rememberScroll = () => scrollCache.set(apiQuery, window.scrollY)
 
   const crews = useApiQuery('crews', (signal) => apiFetch<Crew[]>('/crews', { signal }))
+  const crewOptions: [string, string][] = (crews.data ?? []).map((c) => [c.id, c.name])
+  // Si la URL trae un crewId que aún no está en la lista (cargando, error o id inexistente),
+  // lo mostramos igual: el select nunca debe decir "Todas" con un filtro activo.
+  if (filters.crewId && !crewOptions.some(([id]) => id === filters.crewId)) {
+    const label = crews.loading ? 'Cargando tripulaciones…' : crews.error ? 'Tripulación seleccionada' : 'Tripulación desconocida'
+    crewOptions.unshift([filters.crewId, label])
+  }
 
-  // Regla del Log Pose: solo mostramos datos de la query actual. Mientras carga la nueva,
-  // los anteriores quedan atenuados bajo el overlay (no se presentan como resultado final).
-  const showData = data !== null && (dataKey === apiQuery || loading)
+  // Regla del Log Pose: solo mostramos datos de la query actual. Mientras carga la nueva
+  // no se ve nada de la anterior (ni cards ni totales de paginación).
+  const current = dataKey === apiQuery ? data : (pageCache.get(apiQuery) ?? null)
 
   return (
     <div className="space-y-4">
@@ -122,6 +131,7 @@ export function WantedListPage() {
             type="search"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
+            maxLength={MAX_Q_LENGTH}
             placeholder="Ej: Luffy, Pirate Hunter…"
             className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
           />
@@ -136,7 +146,13 @@ export function WantedListPage() {
           label="Tripulación"
           value={filters.crewId ?? ''}
           onChange={(v) => updateFilters({ crewId: v || null })}
-          options={[['', 'Todas'], ...(crews.data ?? []).map((c): [string, string] => [c.id, c.name])]}
+          options={[['', 'Todas'], ...crewOptions]}
+          hint={crews.error && (
+            <span className="text-red-400">
+              No se pudieron cargar las tripulaciones.{' '}
+              <button type="button" onClick={crews.retry} className="underline">Reintentar</button>
+            </span>
+          )}
         />
         <Select
           label="Fruta del diablo"
@@ -156,6 +172,17 @@ export function WantedListPage() {
           onChange={(v) => updateFilters({ size: Number(v) as WantedFilters['size'] })}
           options={[['10', '10'], ['20', '20'], ['50', '50']]}
         />
+        <button
+          type="button"
+          onClick={() => {
+            setSearchText('')
+            setSearchParams(new URLSearchParams())
+          }}
+          disabled={canonical.length === 0}
+          className="rounded border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 lg:col-span-3"
+        >
+          Limpiar filtros
+        </button>
       </div>
 
       {/* Altura mínima fija + overlay de carga: el layout no "salta" mientras carga. */}
@@ -168,11 +195,11 @@ export function WantedListPage() {
 
         {error ? (
           <ErrorBox message={error} onRetry={() => setAttempt((a) => a + 1)} />
-        ) : showData && data.content.length === 0 ? (
+        ) : current && current.content.length === 0 ? (
           <EmptyBox>No hay carteles que coincidan con estos filtros.</EmptyBox>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
-            {(showData ? data.content : []).map((w) => (
+            {(current ? current.content : []).map((w) => (
               <li key={w.id}>
                 <Link
                   to={`/wanted/${w.id}`}
@@ -198,36 +225,43 @@ export function WantedListPage() {
         )}
       </div>
 
-      {data && !error && (
-        <Pagination
-          page={filters.page}
-          totalPages={data.totalPages}
-          totalElements={data.totalElements}
-          disabled={loading}
-          onChange={(page) => updateFilters({ page })}
-        />
-      )}
+      {/* Altura reservada: la paginación aparece y desaparece sin mover el layout. */}
+      <div className="min-h-9">
+        {current && !error && (
+          <Pagination
+            page={filters.page}
+            totalPages={current.totalPages}
+            totalElements={current.totalElements}
+            disabled={loading}
+            onChange={(page) => updateFilters({ page })}
+          />
+        )}
+      </div>
     </div>
   )
 }
 
-function Select({ label, value, onChange, options }: {
+function Select({ label, value, onChange, options, hint }: {
   label: string
   value: string
   onChange: (v: string) => void
   options: [string, string][]
+  hint?: ReactNode
 }) {
   return (
-    <label className="block">
-      <span className="text-xs uppercase text-slate-400">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
-      >
-        {options.map(([v, text]) => <option key={v} value={v}>{text}</option>)}
-      </select>
-    </label>
+    <div>
+      <label className="block">
+        <span className="text-xs uppercase text-slate-400">{label}</span>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
+        >
+          {options.map(([v, text]) => <option key={v} value={v}>{text}</option>)}
+        </select>
+      </label>
+      {hint && <p className="mt-1 text-xs">{hint}</p>}
+    </div>
   )
 }
 
